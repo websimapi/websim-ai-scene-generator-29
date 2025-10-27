@@ -47,43 +47,42 @@ export function initializePanelManager() {
     let initialPanelHeight = 0; // Store initial height on drag start
 
     const startInteraction = (e) => {
+        // Only trigger if the touch is on the handle itself
+        if (e.target !== e.currentTarget) return;
+
         e.preventDefault();
-        const touch = e.touches[0];
-        startY = touch.clientY;
+        startY = e.touches[0].clientY;
         lastY = startY;
         isResizing = true;
         isDragging = false;
-        mobilePanel.style.transition = 'transform 0.3s ease-out, height 0.3s ease-out';
+        mobilePanel.style.transition = 'none'; // No transition during interaction
         document.body.style.userSelect = 'none';
 
         // Store initial height
-        initialPanelHeight = mobilePanel.getBoundingClientRect().height;
+        const panelRect = mobilePanel.getBoundingClientRect();
+        initialPanelHeight = panelRect.height;
     };
 
     const doInteraction = (e) => {
         if (!isResizing) return;
-        const touch = e.touches[0];
-        const currentY = touch.clientY;
+
+        const currentY = e.touches[0].clientY;
         const deltaYFromStart = Math.abs(currentY - startY);
 
         if (deltaYFromStart > tapThreshold) {
             isDragging = true;
-             // Use direct manipulation for dragging
-            mobilePanel.style.transition = 'none';
-            appContainer.style.transition = 'none';
 
-            // If we start dragging, make sure the panel is visible and positioned correctly for resizing
+            // If we start dragging a hidden panel, make it visible first
             if (!mobilePanel.classList.contains('visible')) {
                 appContainer.classList.add('panel-visible');
                 mobilePanel.classList.add('visible');
-                // Correctly calculate initial height based on where the drag starts from the collapsed state
-                const handleHeight = 30; // From CSS
-                initialPanelHeight = window.innerHeight - startY + handleHeight;
+                // Set a sensible starting height when dragging open from collapsed state
+                initialPanelHeight = window.innerHeight - startY;
             }
         }
         
         if (isDragging) {
-            const deltaY = startY - currentY; // Total change from start
+            const deltaY = startY - e.touches[0].clientY; // Total change from start
             
             let newPanelHeight = initialPanelHeight + deltaY;
             
@@ -92,25 +91,32 @@ export function initializePanelManager() {
 
             newPanelHeight = Math.max(minHeight, Math.min(newPanelHeight, maxHeight));
             
+            // The app container height is now controlled by CSS flexbox, so we just set panel height.
             mobilePanel.style.height = `${newPanelHeight}px`;
-            appContainer.style.paddingBottom = `${newPanelHeight}px`;
+
+            // We need to adjust the app-container height for the canvas to resize correctly
+            const newAppContainerHeight = window.innerHeight - toolbarHeight - newPanelHeight;
+            appContainer.style.height = `${newAppContainerHeight}px`;
         }
     };
 
     const stopInteraction = (e) => {
         if (!isResizing) return;
-        isResizing = false;
         
-        // Restore transitions
+        const wasDragging = isDragging; // Capture state before resetting
+        
+        isResizing = false;
+        isDragging = false;
+        document.body.style.userSelect = '';
         mobilePanel.style.transition = 'transform 0.3s ease-out, height 0.3s ease-out';
-        appContainer.style.transition = 'padding-bottom 0.3s ease-out';
 
-        if (!isDragging) { // This was a tap
+
+        if (!wasDragging) { // This was a tap
             const isVisible = mobilePanel.classList.toggle('visible');
             appContainer.classList.toggle('panel-visible', isVisible);
             
             // Reset inline styles on toggle to allow CSS to take over
-            appContainer.style.paddingBottom = ''; 
+            appContainer.style.height = ''; 
             mobilePanel.style.height = ''; 
             
              if ('ontouchstart' in window) {
@@ -123,12 +129,13 @@ export function initializePanelManager() {
             if (finalHeight < 120) {
                  mobilePanel.classList.remove('visible');
                  appContainer.classList.remove('panel-visible');
-                 appContainer.style.paddingBottom = '';
+                 appContainer.style.height = '';
                  mobilePanel.style.height = '';
             }
         }
         
         document.body.style.userSelect = '';
+        mobilePanel.style.transition = 'transform 0.3s ease-out, height 0.3s ease-out';
     };
     
     if (mobilePanel) {
