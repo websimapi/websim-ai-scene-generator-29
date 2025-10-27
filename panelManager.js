@@ -47,9 +47,6 @@ export function initializePanelManager() {
     let initialPanelHeight = 0; // Store initial height on drag start
 
     const startInteraction = (e) => {
-        // Only trigger if the touch is on the handle itself
-        if (e.target !== e.currentTarget) return;
-
         e.preventDefault();
         startY = e.touches[0].clientY;
         lastY = startY;
