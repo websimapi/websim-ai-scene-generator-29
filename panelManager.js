@@ -40,6 +40,7 @@ export function initializePanelManager() {
     let isDragging = false; // To distinguish from tap
     let startY = 0;
     let lastY = 0;
+    let startTime = 0; // To calculate velocity
     const toolbarHeight = 60; // From CSS
     const tapThreshold = 10; // Max pixels moved for a tap
     let initialPanelHeight = 0; // Store initial height on drag start
@@ -48,6 +49,7 @@ export function initializePanelManager() {
         e.preventDefault();
         startY = e.touches[0].clientY;
         lastY = startY;
+        startTime = Date.now();
         isResizing = true;
         isDragging = false;
         mobilePanel.style.transition = 'transform 0.3s ease-in-out'; // Keep smooth for taps
@@ -101,7 +103,28 @@ export function initializePanelManager() {
         if (!isResizing) return;
         isResizing = false;
 
-        if (!isDragging) { // This was a tap
+        if (isDragging) { // This was a drag
+            const endY = e.changedTouches[0].clientY;
+            const deltaTime = Date.now() - startTime;
+            const deltaY = endY - startY;
+            const velocityY = deltaTime > 0 ? deltaY / deltaTime : 0; // pixels per millisecond
+
+            const currentPanelHeight = mobilePanel.offsetHeight;
+            const isFastSwipeDown = velocityY > 0.7; // A reasonably fast downward flick
+            const isDraggedDownFar = currentPanelHeight < (window.innerHeight * 0.25); // Dragged to less than 25% of screen height
+
+            if (isFastSwipeDown || isDraggedDownFar) {
+                // Hide panel
+                mobilePanel.classList.remove('visible');
+                appContainer.classList.remove('panel-visible');
+                appContainer.style.height = '';
+                mobilePanel.style.height = '';
+                if ('ontouchstart' in window) {
+                    stopAssetPlaceholderAnimation();
+                }
+            }
+            // Otherwise, leave the panel at its new height
+        } else { // This was a tap
             const isVisible = mobilePanel.classList.toggle('visible');
             appContainer.classList.toggle('panel-visible', isVisible);
             
@@ -136,4 +159,3 @@ export function initializePanelManager() {
         document.getElementById('asset-library').addEventListener('click', () => setTimeout(updateMobilePanelContent, 0));
     }
 }
-
