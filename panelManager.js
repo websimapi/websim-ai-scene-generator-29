@@ -39,7 +39,7 @@ export function initializePanelManager() {
     let isResizing = false;
     let isDragging = false; // To distinguish from tap
     let startY = 0;
-    let lastY = 0;
+    let lastY = 0; // This variable seems unused, can be removed if not needed.
     let startTime = 0; // To calculate velocity
     const toolbarHeight = 60; // From CSS
     let initialPanelHeight = 0; // Store initial height on drag start
@@ -47,88 +47,68 @@ export function initializePanelManager() {
     const startInteraction = (e) => {
         e.preventDefault();
         startY = e.touches[0].clientY;
-        lastY = startY;
         startTime = Date.now();
         isResizing = true;
         isDragging = false;
-        mobilePanel.style.transition = 'none'; // Use direct manipulation, no animations
-        document.body.style.userSelect = 'none';
 
-        // Store initial height
-        const panelRect = mobilePanel.getBoundingClientRect();
-        if (!mobilePanel.classList.contains('visible')) {
-             initialPanelHeight = window.innerHeight * 0.5; // Default to 50vh
+        // Immediately switch to direct height manipulation
+        mobilePanel.style.transition = 'none';
+        mobilePanel.classList.add('visible');
+        appContainer.classList.add('panel-visible');
+        mobilePanel.style.transform = ''; // Override class transform
+
+        // Get current height. If it was hidden, height is effectively the handle's height.
+        if (mobilePanel.style.height && mobilePanel.style.height.endsWith('px')) {
+            initialPanelHeight = parseFloat(mobilePanel.style.height);
         } else {
-             initialPanelHeight = panelRect.height;
+            initialPanelHeight = 30; // Corresponds to handle height in CSS
         }
+        
+        document.body.style.userSelect = 'none';
     };
 
     const doInteraction = (e) => {
         if (!isResizing) return;
 
         const currentY = e.touches[0].clientY;
-        const deltaY = startY - currentY; // Upward movement is positive
+        const deltaFromStart = startY - currentY; // Upward movement is positive
 
         // Any movement is considered a drag
-        if (Math.abs(currentY - startY) > 5) { // Small threshold to prevent accidental drags
+        if (Math.abs(currentY - startY) > 5) {
             isDragging = true;
         }
 
         if (isDragging) {
-            if (!mobilePanel.classList.contains('visible')) {
-                // If panel is hidden, we translate it up first.
-                const handleHeight = 30; // From CSS
-                let translateY = Math.max(0, initialPanelHeight - handleHeight - deltaY);
-                
-                if (translateY === 0) {
-                    // Transitioned from translating to resizing
-                    mobilePanel.classList.add('visible');
-                    appContainer.classList.add('panel-visible');
-                    mobilePanel.style.transform = ''; // Clear transform
-                    // Adjust startY to correctly calculate height from this point
-                    startY = currentY;
-                    initialPanelHeight = handleHeight;
-                } else {
-                     mobilePanel.style.transform = `translateY(${translateY}px)`;
-                }
+            let newPanelHeight = initialPanelHeight + deltaFromStart;
+        
+            const minHeight = 30; // Min height is the handle height
+            const maxHeight = window.innerHeight - toolbarHeight - 100; // Leave 100px for canvas
 
-            } else {
-                // Panel is visible, resize its height
-                let newPanelHeight = initialPanelHeight + deltaY;
+            newPanelHeight = Math.max(minHeight, Math.min(newPanelHeight, maxHeight));
             
-                const minHeight = 100;
-                const maxHeight = window.innerHeight - toolbarHeight - minHeight;
+            const newAppContainerHeight = window.innerHeight - toolbarHeight - newPanelHeight;
 
-                newPanelHeight = Math.max(minHeight, Math.min(newPanelHeight, maxHeight));
-                
-                const newAppContainerHeight = window.innerHeight - toolbarHeight - newPanelHeight;
-
-                mobilePanel.style.height = `${newPanelHeight}px`;
-                appContainer.style.height = `${newAppContainerHeight}px`;
-            }
+            mobilePanel.style.height = `${newPanelHeight}px`;
+            appContainer.style.height = `${newAppContainerHeight}px`;
         }
     };
 
     const stopInteraction = (e) => {
         if (!isResizing) return;
         isResizing = false;
+        
+        // Restore transitions for any animations
+        mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0.3s ease-in-out';
 
         if (isDragging) { // This was a drag
-            const endY = e.changedTouches[0].clientY;
-            const deltaTime = Date.now() - startTime;
-            const deltaY = endY - startY;
-            const velocityY = deltaTime > 0 ? deltaY / deltaTime : 0; // pixels per millisecond
-
             const currentPanelHeight = mobilePanel.offsetHeight;
-            const isFastSwipeDown = velocityY > 0.7; // A reasonably fast downward flick
-            const isDraggedDownFar = currentPanelHeight < (window.innerHeight * 0.25) && mobilePanel.classList.contains('visible');
-            const isStillMostlyHidden = !mobilePanel.classList.contains('visible');
-
-            if (isFastSwipeDown || isDraggedDownFar || isStillMostlyHidden) {
-                // Hide panel
-                mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0s';
+            
+            // If user drags it to be very small, hide it.
+            if (currentPanelHeight < window.innerHeight * 0.20) {
                 mobilePanel.classList.remove('visible');
                 appContainer.classList.remove('panel-visible');
+                
+                // Clear inline styles so CSS classes can take over for hiding animation
                 appContainer.style.height = '';
                 mobilePanel.style.height = '';
                 mobilePanel.style.transform = '';
@@ -137,14 +117,15 @@ export function initializePanelManager() {
                     stopAssetPlaceholderAnimation();
                 }
             }
-            // Otherwise, leave the panel at its new height/position
+            // else: Leave the panel at its new height. The inline styles remain.
         }
         // No 'else' block, so taps do nothing.
         
         document.body.style.userSelect = '';
-        setTimeout(() => {
-             mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0s';
-        }, 50);
+        
+        // This timeout was to prevent transition from firing on the last drag frame.
+        // A better approach is to set the transition style *after* the drag logic is complete.
+        // It's already placed correctly above.
     };
     
     if (mobilePanel) {
