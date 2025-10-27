@@ -74,8 +74,8 @@ export function initializePanelManager() {
 
             // If we start dragging a hidden panel, make it visible first
             if (!mobilePanel.classList.contains('visible')) {
-                appContainer.classList.add('panel-visible');
                 mobilePanel.classList.add('visible');
+                appContainer.classList.add('panel-visible');
                 // Set a sensible starting height when dragging open from collapsed state
                 initialPanelHeight = window.innerHeight - startY;
             }
@@ -107,9 +107,8 @@ export function initializePanelManager() {
         
         isResizing = false;
         isDragging = false;
-        document.body.style.userSelect = '';
         mobilePanel.style.transition = 'transform 0.3s ease-out, height 0.3s ease-out';
-
+        document.body.style.userSelect = '';
 
         if (!wasDragging) { // This was a tap
             const isVisible = mobilePanel.classList.toggle('visible');
@@ -133,17 +132,14 @@ export function initializePanelManager() {
                  mobilePanel.style.height = '';
             }
         }
-        
-        document.body.style.userSelect = '';
-        mobilePanel.style.transition = 'transform 0.3s ease-out, height 0.3s ease-out';
     };
     
     if (mobilePanel) {
         const handle = mobilePanel.querySelector('.mobile-resize-handle');
         handle.addEventListener('touchstart', startInteraction, { passive: false });
-        window.addEventListener('touchmove', doInteraction, { passive: false });
-        window.addEventListener('touchend', stopInteraction);
-        window.addEventListener('touchcancel', stopInteraction);
+        handle.addEventListener('touchmove', doInteraction, { passive: false });
+        handle.addEventListener('touchend', stopInteraction);
+        handle.addEventListener('touchcancel', stopInteraction);
 
         // Initial setup
         updateMobilePanelContent();
@@ -154,4 +150,3 @@ export function initializePanelManager() {
         document.getElementById('asset-library').addEventListener('click', () => setTimeout(updateMobilePanelContent, 0));
     }
 }
-
