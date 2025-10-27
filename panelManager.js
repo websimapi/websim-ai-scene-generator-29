@@ -42,9 +42,7 @@ export function initializePanelManager() {
     let lastY = 0;
     let startTime = 0; // To calculate velocity
     const toolbarHeight = 60; // From CSS
-    const tapThreshold = 10; // Max pixels moved for a tap
     let initialPanelHeight = 0; // Store initial height on drag start
-    const handleHeight = 30; // From CSS
 
     const startInteraction = (e) => {
         e.preventDefault();
@@ -53,44 +51,51 @@ export function initializePanelManager() {
         startTime = Date.now();
         isResizing = true;
         isDragging = false;
-        mobilePanel.style.transition = 'none'; // Direct manipulation
+        mobilePanel.style.transition = 'none'; // Use direct manipulation, no animations
         document.body.style.userSelect = 'none';
 
+        // Store initial height
         const panelRect = mobilePanel.getBoundingClientRect();
-        initialPanelHeight = panelRect.height;
+        if (!mobilePanel.classList.contains('visible')) {
+             initialPanelHeight = window.innerHeight * 0.5; // Default to 50vh
+        } else {
+             initialPanelHeight = panelRect.height;
+        }
     };
 
     const doInteraction = (e) => {
         if (!isResizing) return;
 
         const currentY = e.touches[0].clientY;
-        const deltaYFromStart = currentY - startY;
+        const deltaY = startY - currentY; // Upward movement is positive
 
-        if (Math.abs(deltaYFromStart) > tapThreshold) {
+        // Any movement is considered a drag
+        if (Math.abs(currentY - startY) > 5) { // Small threshold to prevent accidental drags
             isDragging = true;
         }
-        
-        if (isDragging) {
-             // If panel is hidden, we control transform. If visible, we control height.
-            if (!mobilePanel.classList.contains('visible')) {
-                const maxTranslate = window.innerHeight - handleHeight;
-                // Dragging up from bottom (deltaY will be negative)
-                let newTranslate = maxTranslate + deltaYFromStart;
-                
-                // Clamp translation
-                newTranslate = Math.max(window.innerHeight - initialPanelHeight, newTranslate);
-                newTranslate = Math.min(maxTranslate, newTranslate);
-                
-                mobilePanel.style.transform = `translateY(${newTranslate}px)`;
-                
-                const visiblePortion = window.innerHeight - newTranslate;
-                const newAppHeight = window.innerHeight - toolbarHeight - visiblePortion;
-                appContainer.style.height = `${newAppHeight}px`;
 
-            } else { // Panel is already visible, so we are resizing height
-                const deltaY = startY - e.touches[0].clientY; // Total change from start
-                let newPanelHeight = initialPanelHeight + deltaY;
+        if (isDragging) {
+            if (!mobilePanel.classList.contains('visible')) {
+                // If panel is hidden, we translate it up first.
+                const handleHeight = 30; // From CSS
+                let translateY = Math.max(0, initialPanelHeight - handleHeight - deltaY);
                 
+                if (translateY === 0) {
+                    // Transitioned from translating to resizing
+                    mobilePanel.classList.add('visible');
+                    appContainer.classList.add('panel-visible');
+                    mobilePanel.style.transform = ''; // Clear transform
+                    // Adjust startY to correctly calculate height from this point
+                    startY = currentY;
+                    initialPanelHeight = handleHeight;
+                } else {
+                     mobilePanel.style.transform = `translateY(${translateY}px)`;
+                }
+
+            } else {
+                // Panel is visible, resize its height
+                let newPanelHeight = initialPanelHeight + deltaY;
+            
                 const minHeight = 100;
                 const maxHeight = window.innerHeight - toolbarHeight - minHeight;
 
@@ -107,59 +112,39 @@ export function initializePanelManager() {
     const stopInteraction = (e) => {
         if (!isResizing) return;
         isResizing = false;
-        mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0.3s ease-in-out';
 
         if (isDragging) { // This was a drag
             const endY = e.changedTouches[0].clientY;
             const deltaTime = Date.now() - startTime;
             const deltaY = endY - startY;
-            const velocityY = deltaTime > 0 ? deltaY / deltaTime : 0;
+            const velocityY = deltaTime > 0 ? deltaY / deltaTime : 0; // pixels per millisecond
 
-            if (mobilePanel.classList.contains('visible')) {
-                // Logic for an already open panel
-                const currentPanelHeight = mobilePanel.offsetHeight;
-                const isFastSwipeDown = velocityY > 0.7;
-                const isDraggedDownFar = currentPanelHeight < (window.innerHeight * 0.25);
+            const currentPanelHeight = mobilePanel.offsetHeight;
+            const isFastSwipeDown = velocityY > 0.7; // A reasonably fast downward flick
+            const isDraggedDownFar = currentPanelHeight < (window.innerHeight * 0.25) && mobilePanel.classList.contains('visible');
+            const isStillMostlyHidden = !mobilePanel.classList.contains('visible');
 
-                if (isFastSwipeDown || isDraggedDownFar) {
-                    mobilePanel.classList.remove('visible');
-                    appContainer.classList.remove('panel-visible');
-                    appContainer.style.height = '';
-                    mobilePanel.style.height = '';
-                    mobilePanel.style.transform = '';
-                    if ('ontouchstart' in window) {
-                        stopAssetPlaceholderAnimation();
-                    }
-                }
-            } else {
-                 // Logic for a hidden panel being dragged open
-                const panelRect = mobilePanel.getBoundingClientRect();
-                const visibleHeight = window.innerHeight - panelRect.top;
-                
-                // Open if dragged more than 20% of its height, or a fast swipe up
-                if (visibleHeight > initialPanelHeight * 0.2 || velocityY < -0.5) {
-                    mobilePanel.classList.add('visible');
-                    appContainer.classList.add('panel-visible');
-                    mobilePanel.style.transform = '';
-                    mobilePanel.style.height = `${initialPanelHeight}px`;
-                    appContainer.style.height = `${window.innerHeight - toolbarHeight - initialPanelHeight}px`;
-                    if ('ontouchstart' in window) {
-                        startAssetPlaceholderAnimation();
-                    }
-                } else {
-                    // Didn't drag far enough, snap back
-                    appContainer.style.height = '';
-                    mobilePanel.style.transform = '';
-                }
-            }
-        } else { // This was a tap, do nothing
-            // Snap back if it was hidden and not dragged far
-             if (!mobilePanel.classList.contains('visible')) {
+            if (isFastSwipeDown || isDraggedDownFar || isStillMostlyHidden) {
+                // Hide panel
+                mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0s';
+                mobilePanel.classList.remove('visible');
+                appContainer.classList.remove('panel-visible');
+                appContainer.style.height = '';
+                mobilePanel.style.height = '';
                 mobilePanel.style.transform = '';
+
+                if ('ontouchstart' in window) {
+                    stopAssetPlaceholderAnimation();
+                }
             }
+            // Otherwise, leave the panel at its new height/position
         }
+        // No 'else' block, so taps do nothing.
         
         document.body.style.userSelect = '';
+        setTimeout(() => {
+             mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0s';
+        }, 50);
     };
     
     if (mobilePanel) {
