@@ -56,13 +56,19 @@
         </div>
         <div id="main-content">
             <canvas id="editor-canvas"></canvas>
-            <div id="mobile-panel-toggles">
-                <button id="mobile-toggle-left" class="mobile-panel-toggle">Assets</button>
-                <button id="mobile-toggle-right" class="mobile-panel-toggle">Properties</button>
+        </div>
+        <div id="mobile-panel">
+            <div class="mobile-resize-handle"></div>
+            <div id="mobile-panel-content">
+                <div id="mobile-left-panel-content">
+                    <!-- left panel content will be moved here by JS -->
+                </div>
+                <div id="mobile-right-panel-content">
+                    <!-- right panel content will be moved here by JS -->
+                </div>
             </div>
         </div>
         <div id="right-panel">
-            <div class="mobile-resize-handle"></div>
             <button id="toggle-right-panel" class="panel-toggle" title="Hide Panel"><img src="hide_icon.png" alt="Hide"></button>
              <div id="properties-panel-content">
                 <p>Select an asset to see its properties.</p>

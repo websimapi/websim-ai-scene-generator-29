@@ -59,6 +59,8 @@ export function selectLibraryAsset(element) {
     } else {
         updateLastGeneratedAsset(null);
         updatePropertiesPanel(null); // Also clear panel when deselecting
+        // This is a good place to trigger a check for mobile panel content,
+        // although the logic is now primarily in panelManager
     }
 }
 

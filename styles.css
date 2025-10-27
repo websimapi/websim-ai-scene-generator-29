@@ -388,21 +388,6 @@ button:hover {
 
 #mobile-panel-toggles {
     display: none; /* Hide on desktop */
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 50px;
-    z-index: 50;
-}
-
-.mobile-panel-toggle {
-    flex-grow: 1;
-    height: 100%;
-    background: var(--panel-bg);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
 }
 
 
@@ -496,27 +481,42 @@ button:hover {
     #main-content {
         flex-grow: 1;
         /* The height is now controlled by the parent #app-container */
-        padding-bottom: 50px; /* Space for toggles */
+        padding-bottom: 0; /* Remove space for toggles */
     }
 
     #left-panel, #right-panel {
+        display: none; /* Hide original panels on mobile */
+    }
+
+    #mobile-panel {
+        display: block; /* Show the mobile panel */
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
         height: 50vh;
         z-index: 100;
-        transform: translateY(100%);
-        transition: transform 0.3s ease-in-out;
-        padding: 10px;
-        padding-top: 35px; /* Increased padding for handle */
+        transform: translateY(calc(100% - 20px)); /* Start collapsed to show handle */
+        transition: transform 0.3s ease-in-out, height 0s;
         box-sizing: border-box;
         border-top: 2px solid var(--border-color);
-        overflow: visible;
+        background-color: var(--panel-bg);
     }
 
-    #left-panel.visible, #right-panel.visible {
+    #mobile-panel.visible {
         transform: translateY(0);
+    }
+    
+    #mobile-panel-content {
+        height: 100%;
+        overflow-y: auto;
+        padding: 10px;
+        padding-top: 20px; /* Space for handle */
+        box-sizing: border-box;
+    }
+    
+    #mobile-panel-content .control-group {
+        padding-bottom: 10px;
     }
 
     .mobile-resize-handle {
@@ -544,38 +544,12 @@ button:hover {
         border-radius: 3px;
     }
 
+    /* Hide desktop panel toggles on mobile */
     .panel-toggle {
-        display: block;
-        position: absolute;
-        top: -16px;
-        right: 10px;
-        align-self: flex-end;
-        z-index: 105;
-        width: 32px;
-        height: 32px;
-        padding: 6px;
-        background-color: rgba(0, 86, 179, 0.4);
-        border: 1px solid var(--border-color);
-        margin-bottom: 0;
-        float: none;
+       display: none;
     }
 
     #mobile-panel-toggles {
-        display: flex;
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 50px;
-        z-index: 50;
-    }
-
-    .mobile-panel-toggle {
-        flex-grow: 1;
-        height: 100%;
-        background: var(--panel-bg);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        border-radius: 0;
+        display: none;
     }
 }
