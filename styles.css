@@ -470,7 +470,7 @@ button:hover {
 @media (max-width: 768px) {
     #app-container {
         flex-direction: column;
-        transition: height 0.3s ease-in-out;
+        /* transition: height 0.3s ease-in-out; */ /* Removed to be controlled by JS */
         height: calc(100vh - 60px); /* I am ensuring base height is set correctly for mobile layout */
     }
 

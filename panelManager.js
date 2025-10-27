@@ -53,17 +53,21 @@ export function initializePanelManager() {
 
         // Immediately switch to direct height manipulation
         mobilePanel.style.transition = 'none';
-        mobilePanel.classList.add('visible');
-        appContainer.classList.add('panel-visible');
-        mobilePanel.style.transform = ''; // Override class transform
 
-        // Get current height. If it was hidden, height is effectively the handle's height.
+        // Get current height. If it was hidden (no inline style.height), it's the handle's height.
         if (mobilePanel.style.height && mobilePanel.style.height.endsWith('px')) {
             initialPanelHeight = parseFloat(mobilePanel.style.height);
         } else {
             initialPanelHeight = 30; // Corresponds to handle height in CSS
         }
         
+        // This was causing the "pop". We set the height directly now.
+        mobilePanel.style.height = `${initialPanelHeight}px`;
+        mobilePanel.style.transform = 'translateY(0)'; // Bring panel into view without transition
+        appContainer.classList.add('panel-visible'); // This should resize the canvas
+        const newAppContainerHeight = window.innerHeight - toolbarHeight - initialPanelHeight;
+        appContainer.style.height = `${newAppContainerHeight}px`;
+
         document.body.style.userSelect = 'none';
     };
 
@@ -99,6 +103,7 @@ export function initializePanelManager() {
         
         // Restore transitions for any animations
         mobilePanel.style.transition = 'transform 0.3s ease-in-out, height 0.3s ease-in-out';
+        appContainer.style.transition = 'height 0.3s ease-in-out';
 
         if (isDragging) { // This was a drag
             const currentPanelHeight = mobilePanel.offsetHeight;
@@ -122,7 +127,9 @@ export function initializePanelManager() {
         // No 'else' block, so taps do nothing.
         
         document.body.style.userSelect = '';
-        
+        setTimeout(() => {
+            appContainer.style.transition = 'height 0.3s ease-in-out'; // Restore after potential changes
+        }, 50);
         // This timeout was to prevent transition from firing on the last drag frame.
         // A better approach is to set the transition style *after* the drag logic is complete.
         // It's already placed correctly above.
