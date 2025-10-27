@@ -470,12 +470,12 @@ button:hover {
 @media (max-width: 768px) {
     #app-container {
         flex-direction: column;
-        transition: height 0.3s ease-out;
+        transition: height 0.3s ease-in-out;
         height: calc(100vh - 60px); /* I am ensuring base height is set correctly for mobile layout */
     }
 
     #app-container.panel-visible {
-        height: calc(50vh - 60px); /* Default height when panel becomes visible */
+        height: calc(50vh - 60px); /* Simplified calculation and ensures correct resizing */
     }
 
     #main-content {
@@ -496,8 +496,8 @@ button:hover {
         width: 100%;
         height: 50vh;
         z-index: 100;
-        transform: translateY(calc(100% - 40px)); /* Start collapsed to show handle */
-        transition: transform 0.3s ease-out, height 0.3s ease-out;
+        transform: translateY(calc(100% - 30px)); /* Start collapsed to show handle */
+        transition: transform 0.3s ease-in-out, height 0s;
         box-sizing: border-box;
         border-top: 2px solid var(--border-color);
         background-color: var(--panel-bg);
@@ -511,7 +511,7 @@ button:hover {
         height: 100%;
         overflow-y: auto;
         padding: 10px;
-        padding-top: 40px; /* Space for handle */
+        padding-top: 30px; /* Space for handle */
         box-sizing: border-box;
     }
     
@@ -525,7 +525,7 @@ button:hover {
         top: 0;
         left: 0;
         width: 100%;
-        height: 40px;
+        height: 30px;
         background-color: transparent;
         cursor: ns-resize;
         touch-action: none;
