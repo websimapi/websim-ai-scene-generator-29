@@ -44,6 +44,7 @@ export function initializePanelManager() {
     let lastY = 0;
     const toolbarHeight = 60; // From CSS
     const tapThreshold = 10; // Max pixels moved for a tap
+    let initialPanelHeight = 0; // Store initial height on drag start
 
     const startInteraction = (e) => {
         e.preventDefault();
@@ -53,6 +54,15 @@ export function initializePanelManager() {
         isDragging = false;
         mobilePanel.style.transition = 'transform 0.3s ease-in-out'; // Keep smooth for taps
         document.body.style.userSelect = 'none';
+
+        // Store initial height
+        const panelRect = mobilePanel.getBoundingClientRect();
+        // If panel is not visible, its height is the full window height. Use a sensible default.
+        if (!mobilePanel.classList.contains('visible')) {
+             initialPanelHeight = window.innerHeight * 0.5; // Default to 50vh
+        } else {
+             initialPanelHeight = panelRect.height;
+        }
     };
 
     const doInteraction = (e) => {
@@ -64,34 +74,28 @@ export function initializePanelManager() {
         if (deltaYFromStart > tapThreshold) {
             isDragging = true;
             mobilePanel.style.transition = 'none'; // Use direct manipulation for dragging
+
+            // If we start dragging, make sure the panel is visible and positioned correctly for resizing
+            if (!mobilePanel.classList.contains('visible')) {
+                appContainer.classList.add('panel-visible');
+                mobilePanel.classList.add('visible');
+            }
         }
         
         if (isDragging) {
-            const deltaY = lastY - currentY;
-            lastY = currentY;
-
-            const panelHeight = mobilePanel.offsetHeight;
-            const appContainerHeight = appContainer.offsetHeight;
-
-            let newPanelHeight = panelHeight + deltaY;
-            let newAppContainerHeight = appContainerHeight - deltaY;
-
+            const deltaY = startY - e.touches[0].clientY; // Total change from start
+            
+            let newPanelHeight = initialPanelHeight + deltaY;
+            
             const minHeight = 100;
             const maxHeight = window.innerHeight - toolbarHeight - minHeight;
 
             newPanelHeight = Math.max(minHeight, Math.min(newPanelHeight, maxHeight));
-            newAppContainerHeight = window.innerHeight - toolbarHeight - newPanelHeight;
+            
+            const newAppContainerHeight = window.innerHeight - toolbarHeight - newPanelHeight;
 
             mobilePanel.style.height = `${newPanelHeight}px`;
             appContainer.style.height = `${newAppContainerHeight}px`;
-
-            if (mobilePanel.classList.contains('visible')) {
-                 // ensure it stays visible while resizing
-            } else {
-                // If we start dragging from collapsed state, make it visible
-                mobilePanel.classList.add('visible');
-                appContainer.classList.add('panel-visible');
-            }
         }
     };
 
